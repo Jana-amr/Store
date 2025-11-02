@@ -1,0 +1,418 @@
+import 'package:flutter/material.dart';
+import 'WidgetScreen.dart';
+import 'registration_screen.dart';
+
+class LoginScreen extends StatefulWidget {
+  @override
+  State<LoginScreen> createState() => _LoginScreenState();
+}
+
+class _LoginScreenState extends State<LoginScreen> {
+  final TextEditingController emailController = TextEditingController();
+  final TextEditingController passwordController = TextEditingController();
+
+  String? errorMessage;
+
+  void loginUser() {
+    // القيم المسموح بيها (user الوحيد المسموح يدخل)
+    const allowedEmail = "admin@gmail.com";
+    const allowedPassword = "123456";
+
+    if (emailController.text.trim() == allowedEmail &&
+        passwordController.text.trim() == allowedPassword) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => WidgetScreen()),
+      );
+    } else {
+      setState(() {
+        errorMessage = "Invalid email or password";
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text("Login")),
+      body: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            TextField(
+              controller: emailController,
+              decoration: InputDecoration(
+                labelText: "Email",
+                border: OutlineInputBorder(),
+              ),
+            ),
+            SizedBox(height: 20),
+            TextField(
+              controller: passwordController,
+              decoration: InputDecoration(
+                labelText: "Password",
+                border: OutlineInputBorder(),
+              ),
+              obscureText: true,
+            ),
+            if (errorMessage != null) ...[
+              SizedBox(height: 15),
+              Text(
+                errorMessage!,
+                style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+              ),
+            ],
+            SizedBox(height: 25),
+            ElevatedButton(
+              onPressed: loginUser,
+              child: Text("Login"),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => RegistrationScreen()),
+                );
+              },
+              child: Text("Don’t have an account? Register"),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+///
+import 'package:flutter/material.dart';
+import 'package:flutter_application_3/screens/ProductDetails.dart';
+import '../model/Product.dart';
+
+class ProductCard extends StatelessWidget {
+  final Product product;
+
+  const ProductCard({required this.product});
+
+  @override
+  Widget build(BuildContext context) {
+
+
+    return InkWell(
+onTap:(){
+Navigator.push(
+context,
+MaterialPageRoute(builder:(_) => ProductDetails(product:product)),
+);
+      },
+      child: Card(
+        elevation: 3,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Expanded(
+              child: Image.network(product.image, fit: BoxFit.contain),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Text(
+                product.title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis
+              ),
+            ),
+            Text("\$${product.price}", style: TextStyle(fontWeight: FontWeight.bold)),
+          ],
+        ),
+      ),
+    );
+  }
+}
+////
+import 'package:flutter/material.dart';
+import '../model/Product.dart';
+
+class ProductDetails extends StatelessWidget {
+  final Product product;
+  const ProductDetails({required this.product});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text(product.title)),
+      body: SingleChildScrollView(
+        padding: EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          
+          children: [
+            Center(
+              child: Image.network(
+                product.image,
+                height: 250,
+                fit: BoxFit.contain,
+              ),
+            ),
+            SizedBox(height: 20),
+            Text(
+              product.title,
+              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+            ),
+            SizedBox(height: 10),
+            Text(
+              "Category: ${product.category}",
+              style: TextStyle(color: Colors.grey[600]),
+            ),
+            SizedBox(height: 10),
+            Row(
+              children: [
+                Icon(Icons.star, color: Colors.amber),
+                Text("${product.rate}", style: TextStyle(fontSize: 18)),
+                Spacer(),
+                Text("\$${product.price}",style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),),
+              ],
+            ),
+            SizedBox(height: 20),
+            Text(
+              product.description,
+              style: TextStyle(fontSize: 16),
+            ),
+          ],
+        
+        ),
+      ),
+    );
+  }
+}
+///
+import 'package:flutter/material.dart';
+import'package:flutter_application_3/screens/Login_Screen.dart';
+class RegistrationScreen extends StatelessWidget {
+  final TextEditingController nameController = TextEditingController();
+  final TextEditingController emailController = TextEditingController();
+  final TextEditingController passwordController = TextEditingController();
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text("Register")),
+      body: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            TextField(
+              controller: nameController,
+              decoration: InputDecoration(
+                labelText: "Full Name",
+                border: OutlineInputBorder(),
+              ),
+            ),
+            SizedBox(height: 20),
+            TextField(
+              controller: emailController,
+              decoration: InputDecoration(
+                labelText: "Email",
+                border: OutlineInputBorder(),
+              ),
+            ),
+            SizedBox(height: 20),
+            TextField(
+              controller: passwordController,
+              decoration: InputDecoration(
+                labelText: "Password",
+                border: OutlineInputBorder(),
+              ),
+              obscureText: true,
+            ),
+            SizedBox(height: 30),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (_) => LoginScreen()),
+                );
+              },
+              child: Text("Register"),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+///
+import 'package:flutter/material.dart';
+import 'package:flutter_application_3/data/helper.dart';
+import 'package:flutter_application_3/model/Product.dart';
+import 'package:flutter_application_3/screens/ProductCard%20.dart';
+
+
+class WidgetScreen extends StatefulWidget {
+  const WidgetScreen({super.key});
+
+  @override
+  State<WidgetScreen> createState() => _WidgetScreenState();
+}
+
+class _WidgetScreenState extends State<WidgetScreen> {
+  late Future<List<Product>> _futureProducts;
+
+
+
+  @override
+  void initState() {
+    super.initState();
+    _futureProducts = featchedProducts();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text('My Fake Store'), centerTitle: true),
+      body: FutureBuilder(
+        future: _futureProducts,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return Center(child: CircularProgressIndicator());
+          } else if (snapshot.hasError) {
+            return Center(child: Text('Error: ${snapshot.error}'));
+          } else if (snapshot.hasData) {
+
+            final data = snapshot.data!;
+
+            return GridView(
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              crossAxisSpacing: 20,
+              mainAxisSpacing: 20,
+              childAspectRatio: 3/2,
+            ),
+           
+            children: data.map((product)=> ProductCard(product: product)).toList()
+            );
+          } else {
+            return Center(child: Text('error Occured'));
+          }
+        },
+      ),
+    );
+  }
+}
+///
+import 'package:flutter/material.dart';
+import 'package:flutter_application_3/screens/Login_Screen.dart';
+
+void main() {
+  runApp(const MyApp());
+}
+
+class MyApp extends StatefulWidget {
+  const MyApp({super.key});
+
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  bool isDark = false; 
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      title: "Dark & Light Mode",
+      theme: ThemeData.light(), 
+      darkTheme: ThemeData.dark(), 
+      themeMode: isDark ? ThemeMode.dark : ThemeMode.light, 
+      home: Scaffold(
+        appBar: AppBar(
+          title: Text(isDark ? "Dark Mode" : "Light Mode"),
+          actions: [
+            Switch(
+              value: isDark,
+              onChanged: (value) {
+                setState(() {
+                  isDark = value;
+                });
+              },
+            ),
+          ],
+        ),
+        body: LoginScreen(), 
+      ),
+    );
+  }
+}
+
+///
+class Product {
+
+
+  final String title;
+  final double price;
+  final String description;
+  final String category;
+  final String image;
+  final double rate;
+
+  Product({
+    required this.title,
+    required this.price,
+    required this.description,
+    required this.category,
+    required this.image,
+    required this.rate,
+  });
+
+  factory Product.fromJson(Map<String, dynamic> json) {
+    return Product(
+      title: json['title'],
+      price: json['price'].toDouble(),
+      description: json['description'],
+      category: json['category'],
+      image: json['image'],
+      rate: json['rating']['rate'].toDouble(),
+    );
+  }
+}
+
+///
+import 'package:flutter_application_3/model/Product.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+
+Future<List<Product>> featchedProducts() async{
+  final response = await http.get(Uri.parse('https://fakestoreapi.com/products'));
+
+  if(response.statusCode == 200){
+    List<dynamic> body = jsonDecode(response.body);
+
+    return body.map((json)=> Product.fromJson(json)).toList();
+  } else {
+    throw Exception('Error In Feating');
+  }
+
+}
+////
+class _ProductCardState extends State<ProductCard> {
+  bool isChecked = false;
+…
+CheckboxListTile(
+  title: const Text("Select"),
+  value: isChecked,
+  onChanged: (bool? value) {
+    setState(() {
+      isChecked = value!;
+    });
+  },
+  controlAffinity: ListTileControlAffinity.leading,
+  dense: true,
+  contentPadding: EdgeInsets.zero,
+),
+///
+   actions: [
+          Switch(
+            value: isDark,
+            onChanged: onThemeChanged,
+          ),
+        ],

@@ -1,0 +1,358 @@
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import '../model/random_user.dart';
+
+// دالة لجلب المستخدمين العشوائيين من API
+Future<List<RandomUser>> fetchRandomUsers() async {
+  final response = await http.get(Uri.parse('https://randomuser.me/api/?results=5'));
+
+  if (response.statusCode == 200) {
+    final data = jsonDecode(response.body);
+    List<dynamic> results = data['results'];
+    return results.map((json) => RandomUser.fromJson(json)).toList();
+  } else {
+    throw Exception('Failed to fetch users');
+  }
+}
+//
+class RandomUser {
+  final String fullName;
+  final String email;
+  final String image;
+  final String street;
+  final String city;
+  final String state;
+  final String country;
+
+  RandomUser({
+    required this.fullName,
+    required this.email,
+    required this.image,
+    required this.street,
+    required this.city,
+    required this.state,
+    required this.country,
+  });
+
+  factory RandomUser.fromJson(Map<String, dynamic> json) {
+    final name = json['name'];
+    final location = json['location'];
+    return RandomUser(
+      fullName: "${name['first']} ${name['last']}",
+      email: json['email'],
+      image: json['picture']['large'],
+      street: location['street']['name'],
+      city: location['city'],
+      state: location['state'],
+      country: location['country'],
+    );
+  }
+}
+//
+import 'package:flutter/material.dart';
+import 'login_screen.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+
+class RegistrationScreen extends StatefulWidget {
+  @override
+  State<RegistrationScreen> createState() => _RegistrationScreenState();
+}
+
+class _RegistrationScreenState extends State<RegistrationScreen> {
+  final TextEditingController nameController = TextEditingController();
+  final TextEditingController phoneController = TextEditingController();
+  final TextEditingController emailController = TextEditingController();
+  final TextEditingController passwordController = TextEditingController();
+
+  String? message;
+
+  Future<void> registerUser() async {
+    final response = await http.post(
+      Uri.parse('https://student.valuxapps.com/api/register'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        "name": nameController.text,
+        "phone": phoneController.text,
+        "email": emailController.text,
+        "password": passwordController.text,
+      }),
+    );
+
+    final data = jsonDecode(response.body);
+
+    if (data['status'] == true) {
+      setState(() {
+        message = "Registration successful";
+      });
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => LoginScreen()),
+      );
+    } else {
+      setState(() {
+        message = data['message'] ?? "Registration failed";
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text("Register")),
+      body: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            TextField(
+              controller: nameController,
+              decoration: InputDecoration(labelText: "Full Name", border: OutlineInputBorder()),
+            ),
+            SizedBox(height: 15),
+            TextField(
+              controller: phoneController,
+              decoration: InputDecoration(labelText: "Phone", border: OutlineInputBorder()),
+            ),
+            SizedBox(height: 15),
+            TextField(
+              controller: emailController,
+              decoration: InputDecoration(labelText: "Email", border: OutlineInputBorder()),
+            ),
+            SizedBox(height: 15),
+            TextField(
+              controller: passwordController,
+              decoration: InputDecoration(labelText: "Password", border: OutlineInputBorder()),
+              obscureText: true,
+            ),
+            SizedBox(height: 25),
+            ElevatedButton(onPressed: registerUser, child: Text("Register")),
+            if (message != null) ...[
+              SizedBox(height: 10),
+              Text(message!, style: TextStyle(color: Colors.red)),
+            ],
+            TextButton(
+              onPressed: () {
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (_) => LoginScreen()),
+                );
+              },
+              child: Text("Already have an account? Login"),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+//
+import 'package:flutter/material.dart';
+import 'random_users_screen.dart';
+import 'registration_screen.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+
+class LoginScreen extends StatefulWidget {
+  @override
+  State<LoginScreen> createState() => _LoginScreenState();
+}
+
+class _LoginScreenState extends State<LoginScreen> {
+  final TextEditingController emailController = TextEditingController();
+  final TextEditingController passwordController = TextEditingController();
+  String? errorMessage;
+
+  Future<void> loginUser() async {
+    final response = await http.post(
+      Uri.parse('https://student.valuxapps.com/api/login'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        "email": emailController.text,
+        "password": passwordController.text,
+      }),
+    );
+
+    final data = jsonDecode(response.body);
+
+    if (data['status'] == true) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => RandomUsersScreen()),
+      );
+    } else {
+      setState(() {
+        errorMessage = data['message'] ?? "Invalid email or password";
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text("Login")),
+      body: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            CircleAvatar(radius: 40, backgroundImage: AssetImage('assets/profile.png')),
+            SizedBox(height: 20),
+            TextField(
+              controller: emailController,
+              decoration: InputDecoration(labelText: "Email", border: OutlineInputBorder()),
+            ),
+            SizedBox(height: 15),
+            TextField(
+              controller: passwordController,
+              decoration: InputDecoration(labelText: "Password", border: OutlineInputBorder()),
+              obscureText: true,
+            ),
+            if (errorMessage != null) ...[
+              SizedBox(height: 10),
+              Text(errorMessage!, style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+            ],
+            SizedBox(height: 20),
+            ElevatedButton(onPressed: loginUser, child: Text("Login")),
+            TextButton(
+              onPressed: () {
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (_) => RegistrationScreen()),
+                );
+              },
+              child: Text("Don’t have an account? Register"),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+} 
+///
+import 'package:flutter/material.dart';
+import '../data/helper.dart';
+import '../model/random_user.dart';
+import 'user_details_screen.dart';
+
+class RandomUsersScreen extends StatefulWidget {
+  @override
+  State<RandomUsersScreen> createState() => _RandomUsersScreenState();
+}
+
+class _RandomUsersScreenState extends State<RandomUsersScreen> {
+  late Future<List<RandomUser>> _futureUsers;
+
+  @override
+  void initState() {
+    super.initState();
+    _futureUsers = fetchRandomUsers();
+  }
+
+  void refreshUsers() {
+    setState(() {
+      _futureUsers = fetchRandomUsers();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text("Random Users")),
+      body: FutureBuilder(
+        future: _futureUsers,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return Center(child: CircularProgressIndicator());
+          } else if (snapshot.hasError) {
+            return Center(child: Text("Error: ${snapshot.error}"));
+          } else if (snapshot.hasData) {
+            final users = snapshot.data!;
+            return ListView.builder(
+              itemCount: users.length,
+              itemBuilder: (context, index) {
+                final user = users[index];
+                return ListTile(
+                  leading: CircleAvatar(backgroundImage: NetworkImage(user.image)),
+                  title: Text(user.fullName),
+                  subtitle: Text(user.email),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => UserDetailsScreen(user: user)),
+                    );
+                  },
+                );
+              },
+            );
+          } else {
+            return Center(child: Text("No data found"));
+          }
+        },
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: refreshUsers,
+        child: Icon(Icons.refresh),
+      ),
+    );
+  }
+}
+//
+import 'package:flutter/material.dart';
+import '../model/random_user.dart';
+
+class UserDetailsScreen extends StatelessWidget {
+  final RandomUser user;
+
+  const UserDetailsScreen({required this.user});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text(user.fullName)),
+      body: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          children: [
+            CircleAvatar(
+              radius: 60,
+              backgroundImage: NetworkImage(user.image),
+            ),
+            SizedBox(height: 20),
+            Text(user.fullName, style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+            SizedBox(height: 10),
+            Text(user.email, style: TextStyle(fontSize: 16, color: Colors.grey[700])),
+            SizedBox(height: 20),
+            Divider(),
+            SizedBox(height: 10),
+            Text("Address:", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            SizedBox(height: 5),
+            Text("${user.street}, ${user.city}, ${user.state}, ${user.country}",
+                style: TextStyle(fontSize: 16)),
+          ],
+        ),
+      ),
+    );
+  }
+}
+//
+import 'package:flutter/material.dart';
+import 'screens/login_screen.dart';
+
+void main() {
+  runApp(MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      title: 'Random User App',
+      theme: ThemeData(
+        primarySwatch: Colors.blue,
+      ),
+      home: LoginScreen(),
+    );
+  }
+}

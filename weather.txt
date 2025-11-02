@@ -1,0 +1,330 @@
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import '../model/weather_model.dart';
+
+Future<WeatherModel> fetchWeather(String cityName) async {
+  final url = 'http://api.weatherapi.com/v1/current.json?key=db9dd685412540c5a56141709250401&q=$cityName';
+  final response = await http.get(Uri.parse(url));
+
+  if (response.statusCode == 200) {
+    final data = jsonDecode(response.body);
+    return WeatherModel.fromJson(data);
+  } else {
+    throw Exception('Failed to load weather data');
+  }
+}
+//
+class WeatherModel {
+  final String cityName;
+  final double temperature;
+  final String condition;
+  final String icon;
+  final double feelsLike;
+  final double windSpeed;
+  final int humidity;
+
+  WeatherModel({
+    required this.cityName,
+    required this.temperature,
+    required this.condition,
+    required this.icon,
+    required this.feelsLike,
+    required this.windSpeed,
+    required this.humidity,
+  });
+
+  factory WeatherModel.fromJson(Map<String, dynamic> json) {
+    final location = json['location'];
+    final current = json['current'];
+    final condition = current['condition'];
+
+    return WeatherModel(
+      cityName: location['name'],
+      temperature: current['temp_c'].toDouble(),
+      condition: condition['text'],
+      icon: 'https:${condition['icon']}',
+      feelsLike: current['feelslike_c'].toDouble(),
+      windSpeed: current['wind_kph'].toDouble(),
+      humidity: current['humidity'],
+    );
+  }
+}
+//
+import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'login_screen.dart';
+
+class RegistrationScreen extends StatefulWidget {
+  @override
+  State<RegistrationScreen> createState() => _RegistrationScreenState();
+}
+
+class _RegistrationScreenState extends State<RegistrationScreen> {
+  final TextEditingController nameController = TextEditingController();
+  final TextEditingController phoneController = TextEditingController();
+  final TextEditingController emailController = TextEditingController();
+  final TextEditingController passwordController = TextEditingController();
+
+  String? message;
+
+  Future<void> registerUser() async {
+    final response = await http.post(
+      Uri.parse('https://student.valuxapps.com/api/register'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        "name": nameController.text,
+        "phone": phoneController.text,
+        "email": emailController.text,
+        "password": passwordController.text,
+      }),
+    );
+
+    final data = jsonDecode(response.body);
+
+    if (data['status'] == true) {
+      setState(() {
+        message = "Registration successful";
+      });
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => LoginScreen()),
+      );
+    } else {
+      setState(() {
+        message = data['message'] ?? "Registration failed";
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text("Register")),
+      body: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            TextField(controller: nameController, decoration: InputDecoration(labelText: "Full Name", border: OutlineInputBorder())),
+            SizedBox(height: 15),
+            TextField(controller: phoneController, decoration: InputDecoration(labelText: "Phone", border: OutlineInputBorder())),
+            SizedBox(height: 15),
+            TextField(controller: emailController, decoration: InputDecoration(labelText: "Email", border: OutlineInputBorder())),
+            SizedBox(height: 15),
+            TextField(controller: passwordController, decoration: InputDecoration(labelText: "Password", border: OutlineInputBorder()), obscureText: true),
+            SizedBox(height: 25),
+            ElevatedButton(onPressed: registerUser, child: Text("Register")),
+            if (message != null) ...[
+              SizedBox(height: 10),
+              Text(message!, style: TextStyle(color: Colors.red)),
+            ],
+            TextButton(
+              onPressed: () {
+                Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => LoginScreen()));
+              },
+              child: Text("Already have an account? Login"),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+//
+import 'package:flutter/material.dart';
+import 'city_search_screen.dart';
+import 'registration_screen.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+
+class LoginScreen extends StatefulWidget {
+  @override
+  State<LoginScreen> createState() => _LoginScreenState();
+}
+
+class _LoginScreenState extends State<LoginScreen> {
+  final TextEditingController emailController = TextEditingController();
+  final TextEditingController passwordController = TextEditingController();
+  String? errorMessage;
+
+  Future<void> loginUser() async {
+    final response = await http.post(
+      Uri.parse('https://student.valuxapps.com/api/login'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        "email": emailController.text,
+        "password": passwordController.text,
+      }),
+    );
+
+    final data = jsonDecode(response.body);
+
+    if (data['status'] == true) {
+      Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => CitySearchScreen()));
+    } else {
+      setState(() {
+        errorMessage = data['message'] ?? "Invalid email or password";
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text("Login")),
+      body: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            CircleAvatar(radius: 40, backgroundImage: AssetImage('assets/weather_icon.png')),
+            SizedBox(height: 20),
+            TextField(controller: emailController, decoration: InputDecoration(labelText: "Email", border: OutlineInputBorder())),
+            SizedBox(height: 15),
+            TextField(controller: passwordController, decoration: InputDecoration(labelText: "Password", border: OutlineInputBorder()), obscureText: true),
+            if (errorMessage != null) ...[
+              SizedBox(height: 10),
+              Text(errorMessage!, style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+            ],
+            SizedBox(height: 20),
+            ElevatedButton(onPressed: loginUser, child: Text("Login")),
+            TextButton(
+              onPressed: () {
+                Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => RegistrationScreen()));
+              },
+              child: Text("Don’t have an account? Register"),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+//
+import 'package:flutter/material.dart';
+import 'weather_display_screen.dart';
+import '../data/helper.dart';
+import '../model/weather_model.dart';
+
+class CitySearchScreen extends StatefulWidget {
+  @override
+  State<CitySearchScreen> createState() => _CitySearchScreenState();
+}
+
+class _CitySearchScreenState extends State<CitySearchScreen> {
+  final TextEditingController cityController = TextEditingController();
+  String? error;
+
+  void getWeather() async {
+    final city = cityController.text.trim();
+    if (city.isEmpty) {
+      setState(() {
+        error = "Please enter a city name";
+      });
+      return;
+    }
+
+    try {
+      final weather = await fetchWeather(city);
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => WeatherDisplayScreen(weather: weather)),
+      );
+    } catch (e) {
+      setState(() {
+        error = "City not found or error fetching data";
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text("Search Weather")),
+      body: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            TextField(
+              controller: cityController,
+              decoration: InputDecoration(
+                labelText: "Enter city name",
+                border: OutlineInputBorder(),
+              ),
+            ),
+            SizedBox(height: 20),
+            ElevatedButton(onPressed: getWeather, child: Text("Get Weather")),
+            if (error != null) ...[
+              SizedBox(height: 10),
+              Text(error!, style: TextStyle(color: Colors.red)),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+//
+import 'package:flutter/material.dart';
+import '../model/weather_model.dart';
+
+class WeatherDisplayScreen extends StatelessWidget {
+  final WeatherModel weather;
+
+  const WeatherDisplayScreen({required this.weather});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text(weather.cityName)),
+      body: Padding(
+        padding: const EdgeInsets.all(25),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Image.network(weather.icon, height: 100),
+            SizedBox(height: 15),
+            Text(
+              "${weather.temperature}°C",
+              style: TextStyle(fontSize: 40, fontWeight: FontWeight.bold),
+            ),
+            SizedBox(height: 10),
+            Text(
+              weather.condition,
+              style: TextStyle(fontSize: 22, color: Colors.grey[700]),
+            ),
+            SizedBox(height: 20),
+            Divider(),
+            SizedBox(height: 10),
+            Text("Feels Like: ${weather.feelsLike}°C"),
+            Text("Wind Speed: ${weather.windSpeed} kph"),
+            Text("Humidity: ${weather.humidity}%"),
+          ],
+        ),
+      ),
+    );
+  }
+}
+//
+import 'package:flutter/material.dart';
+import 'screens/login_screen.dart';
+
+void main() {
+  runApp(MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      title: 'Weather App',
+      theme: ThemeData(
+        primarySwatch: Colors.blue,
+      ),
+      home: LoginScreen(),
+    );
+  }
+}

@@ -1,0 +1,328 @@
+class WeatherModel {
+  final String cityName;
+  final double temperature;
+  final String condition;
+  final String icon;
+  final double feelsLike;
+  final double windSpeed;
+  final int humidity;
+
+  WeatherModel({
+    required this.cityName,
+    required this.temperature,
+    required this.condition,
+    required this.icon,
+    required this.feelsLike,
+    required this.windSpeed,
+    required this.humidity,
+  });
+
+  factory WeatherModel.fromJson(Map<String, dynamic> json) {
+    final location = json['location'];
+    final current = json['current'];
+    final condition = current['condition'];
+
+    return WeatherModel(
+      cityName: location['name'],
+      temperature: current['temp_c'].toDouble(),
+      condition: condition['text'],
+      icon: 'https:${condition['icon']}',
+      feelsLike: current['feelslike_c'].toDouble(),
+      windSpeed: current['wind_kph'].toDouble(),
+      humidity: current['humidity'],
+    );
+  }
+}
+//
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import '../model/weather_model.dart';
+
+// دالة لجلب بيانات الطقس حسب اسم المدينة
+Future<WeatherModel> featchedWeather(String cityName) async {
+  final response = await http.get(Uri.parse(
+      'http://api.weatherapi.com/v1/current.json?key=db9dd685412540c5a56141709250401&q=$cityName'));
+
+  if (response.statusCode == 200) {
+    final data = jsonDecode(response.body);
+    return WeatherModel.fromJson(data);
+  } else {
+    throw Exception('Error In Fetching Weather Data');
+  }
+}
+//
+import 'package:flutter/material.dart';
+import 'login_screen.dart';
+
+class RegistrationScreen extends StatelessWidget {
+  final TextEditingController nameController = TextEditingController();
+  final TextEditingController emailController = TextEditingController();
+  final TextEditingController passwordController = TextEditingController();
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text("Register")),
+      body: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            TextField(
+              controller: nameController,
+              decoration: InputDecoration(
+                labelText: "Full Name",
+                border: OutlineInputBorder(),
+              ),
+            ),
+            SizedBox(height: 20),
+            TextField(
+              controller: emailController,
+              decoration: InputDecoration(
+                labelText: "Email",
+                border: OutlineInputBorder(),
+              ),
+            ),
+            SizedBox(height: 20),
+            TextField(
+              controller: passwordController,
+              decoration: InputDecoration(
+                labelText: "Password",
+                border: OutlineInputBorder(),
+              ),
+              obscureText: true,
+            ),
+            SizedBox(height: 30),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (_) => LoginScreen()),
+                );
+              },
+              child: Text("Register"),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+//
+import 'package:flutter/material.dart';
+import 'registration_screen.dart';
+import 'city_search_screen.dart';
+
+class LoginScreen extends StatefulWidget {
+  @override
+  State<LoginScreen> createState() => _LoginScreenState();
+}
+
+class _LoginScreenState extends State<LoginScreen> {
+  final TextEditingController emailController = TextEditingController();
+  final TextEditingController passwordController = TextEditingController();
+
+  String? errorMessage;
+
+  void loginUser() {
+    const allowedEmail = "admin@gmail.com";
+    const allowedPassword = "123456";
+
+    if (emailController.text.trim() == allowedEmail &&
+        passwordController.text.trim() == allowedPassword) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => CitySearchScreen()),
+      );
+    } else {
+      setState(() {
+        errorMessage = "Invalid email or password";
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text("Login")),
+      body: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            TextField(
+              controller: emailController,
+              decoration: InputDecoration(
+                labelText: "Email",
+                border: OutlineInputBorder(),
+              ),
+            ),
+            SizedBox(height: 20),
+            TextField(
+              controller: passwordController,
+              decoration: InputDecoration(
+                labelText: "Password",
+                border: OutlineInputBorder(),
+              ),
+              obscureText: true,
+            ),
+            if (errorMessage != null) ...[
+              SizedBox(height: 15),
+              Text(
+                errorMessage!,
+                style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+              ),
+            ],
+            SizedBox(height: 25),
+            ElevatedButton(onPressed: loginUser, child: Text("Login")),
+            TextButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => RegistrationScreen()),
+                );
+              },
+              child: Text("Don’t have an account? Register"),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+//
+import 'package:flutter/material.dart';
+import 'weather_display_screen.dart';
+
+class CitySearchScreen extends StatelessWidget {
+  final TextEditingController cityController = TextEditingController();
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text("Search City")),
+      body: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            TextField(
+              controller: cityController,
+              decoration: InputDecoration(
+                labelText: "Enter City Name",
+                border: OutlineInputBorder(),
+              ),
+            ),
+            SizedBox(height: 25),
+            ElevatedButton(
+              onPressed: () {
+                final city = cityController.text.trim();
+                if (city.isNotEmpty) {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => WeatherDisplayScreen(cityName: city),
+                    ),
+                  );
+                }
+              },
+              child: Text("Get Weather"),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+//
+import 'package:flutter/material.dart';
+import '../data/helper.dart';
+import '../model/weather_model.dart';
+
+class WeatherDisplayScreen extends StatefulWidget {
+  final String cityName;
+  const WeatherDisplayScreen({required this.cityName});
+
+  @override
+  State<WeatherDisplayScreen> createState() => _WeatherDisplayScreenState();
+}
+
+class _WeatherDisplayScreenState extends State<WeatherDisplayScreen> {
+  late Future<WeatherModel> _futureWeather;
+
+  @override
+  void initState() {
+    super.initState();
+    _futureWeather = featchedWeather(widget.cityName);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text("Weather Info")),
+      body: FutureBuilder<WeatherModel>(
+        future: _futureWeather,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return Center(child: CircularProgressIndicator());
+          } else if (snapshot.hasError) {
+            return Center(child: Text('Error: ${snapshot.error}'));
+          } else if (snapshot.hasData) {
+            final weather = snapshot.data!;
+            return Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Text(
+                    weather.cityName,
+                    style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
+                  ),
+                  SizedBox(height: 15),
+                  Image.network(weather.icon, height: 100),
+                  SizedBox(height: 10),
+                  Text(
+                    weather.condition,
+                    style: TextStyle(fontSize: 22, color: Colors.blueGrey),
+                  ),
+                  SizedBox(height: 15),
+                  Text(
+                    "${weather.temperature}°C",
+                    style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
+                  ),
+                  SizedBox(height: 15),
+                  Text("Feels like: ${weather.feelsLike}°C"),
+                  SizedBox(height: 10),
+                  Text("Wind Speed: ${weather.windSpeed} km/h"),
+                  SizedBox(height: 10),
+                  Text("Humidity: ${weather.humidity}%"),
+                ],
+              ),
+            );
+          } else {
+            return Center(child: Text("No weather data found"));
+          }
+        },
+      ),
+    );
+  }
+}
+//
+import 'package:flutter/material.dart';
+import 'screens/login_screen.dart';
+
+void main() {
+  runApp(MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      title: 'Weather App',
+      theme: ThemeData(primarySwatch: Colors.blue),
+      home: LoginScreen(),
+    );
+  }
+}

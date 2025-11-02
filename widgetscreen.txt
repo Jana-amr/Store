@@ -1,0 +1,230 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_application_3/data/helper.dart';
+import 'package:flutter_application_3/model/Product.dart';
+import 'package:flutter_application_3/screens/ProductCard%20.dart';
+import 'package:flutter_application_3/screens/SelectedProductsScreen.dart';
+
+class WidgetScreen extends StatefulWidget {
+  const WidgetScreen({super.key});
+
+  @override
+  State<WidgetScreen> createState() => _WidgetScreenState();
+}
+
+class _WidgetScreenState extends State<WidgetScreen> {
+  late Future<List<Product>> _futureProducts;
+  bool isDark = false;
+  String? selectedCategory;
+  final Map<int, bool> selectedProducts = {};
+  String viewType = "grid"; 
+
+  @override
+  void initState() {
+    super.initState();
+    _futureProducts = featchedProducts();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      themeMode: isDark ? ThemeMode.dark : ThemeMode.light,
+      darkTheme: ThemeData.dark(),
+      theme: ThemeData.light(),
+      home: Scaffold(
+        appBar: AppBar(
+          title: const Text('My Fake Store'),
+          centerTitle: true,
+          actions: [
+            Switch(
+              value: isDark,
+              onChanged: (value) {
+                setState(() {
+                  isDark = value;
+                });
+              },
+            ),
+          ],
+        ),
+        body: FutureBuilder(
+          future: _futureProducts,
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            } else if (snapshot.hasError) {
+              return Center(child: Text('Error: ${snapshot.error}'));
+            } else if (snapshot.hasData) {
+              final data = snapshot.data!;
+              final filteredProducts = selectedCategory == null
+                  ? data
+                  : data.where((p) => p.category == selectedCategory).toList();
+
+              final categories = data.map((p) => p.category).toSet().toList();
+
+              return Column(
+                children: [
+                  // 🟢 اختيار الكاتيجوري
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: [
+                        for (var cat in categories)
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Radio<String>(
+                                value: cat,
+                                groupValue: selectedCategory,
+                                onChanged: (value) {
+                                  setState(() {
+                                    selectedCategory = value;
+                                  });
+                                },
+                              ),
+                              Text(cat),
+                            ],
+                          ),
+                        TextButton(
+                          onPressed: () {
+                            setState(() {
+                              selectedCategory = null;
+                            });
+                          },
+                          child: const Text("Show All"),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Radio<String>(
+                        value: "grid",
+                        groupValue: viewType,
+                        onChanged: (value) {
+                          setState(() {
+                            viewType = value!;
+                          });
+                        },
+                      ),
+                      const Text("Grid View"),
+                      Radio<String>(
+                        value: "list",
+                        groupValue: viewType,
+                        onChanged: (value) {
+                          setState(() {
+                            viewType = value!;
+                          });
+                        },
+                      ),
+                      const Text("List View"),
+                    ],
+                  ),
+
+                  
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 10),
+                    child: ElevatedButton.icon(
+                      onPressed: () {
+                        final selectedList = <Product>[];
+                        final allData = filteredProducts;
+
+                        for (int i = 0; i < allData.length; i++) {
+                          if (selectedProducts[i] == true) {
+                            selectedList.add(allData[i]);
+                          }
+                        }
+
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => SelectedProductsScreen(
+                              selectedProducts: selectedList,
+                            ),
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.shopping_cart),
+                      label: const Text("View Selected Products"),
+                    ),
+                  ),
+
+                  // 🟡 عرض المنتجات (حسب الاختيار)
+                  Expanded(
+                    child: viewType == "grid"
+                        ? GridView.builder(
+                            padding: const EdgeInsets.all(10),
+                            gridDelegate:
+                                const SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: 2,
+                              crossAxisSpacing: 20,
+                              mainAxisSpacing: 20,
+                              childAspectRatio: 3 / 2,
+                            ),
+                            itemCount: filteredProducts.length,
+                            itemBuilder: (context, index) {
+                              final product = filteredProducts[index];
+                              final isSelected = selectedProducts[index] ?? false;
+
+                              return Stack(
+                                children: [
+                                  ProductCard(product: product),
+                                  Positioned(
+                                    top: 4,
+                                    right: 4,
+                                    child: Checkbox(
+                                      value: isSelected,
+                                      onChanged: (val) {
+                                        setState(() {
+                                          selectedProducts[index] = val ?? false;
+                                        });
+                                      },
+                                    ),
+                                  ),
+                                ],
+                              );
+                            },
+                          )
+                        : ListView.builder(
+                            padding: const EdgeInsets.all(10),
+                            itemCount: filteredProducts.length,
+                            itemBuilder: (context, index) {
+                              final product = filteredProducts[index];
+                              final isSelected = selectedProducts[index] ?? false;
+
+                              return ListTile(
+                                leading: Image.network(
+                                  product.image,
+                                  width: 60,
+                                  height: 60,
+                                  fit: BoxFit.contain,
+                                ),
+                                title: Text(product.title),
+                                subtitle: Text("\$${product.price}"),
+                                trailing: Checkbox(
+                                  value: isSelected,
+                                  onChanged: (val) {
+                                    setState(() {
+                                      selectedProducts[index] = val ?? false;
+                                    });
+                                  },
+                                ),
+                                onTap: () {
+                                
+                                },
+                              );
+                            },
+                          ),
+                  ),
+                ],
+              );
+            } else {
+              return const Center(child: Text('Error occurred'));
+            }
+          },
+        ),
+      ),
+    );
+  }
+}
